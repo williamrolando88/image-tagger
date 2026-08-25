@@ -17,7 +17,12 @@ export function ProgressBar({ value, label }: ProgressBarProps) {
       {label && <span className="text-sm text-base-content/70">{label}</span>}
 
       <div className="flex items-center gap-2">
-        <progress className="progress progress-primary w-full" value={percentage} max={100} />
+        <progress
+          className="progress progress-primary w-full"
+          value={percentage}
+          max={100}
+          aria-label={label}
+        />
         <span className="text-sm tabular-nums shrink-0">{percentage}%</span>
       </div>
     </div>

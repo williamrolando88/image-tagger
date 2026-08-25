@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { analyzeImage } from '../services/taggerApi'
 import type { Tag } from '../taggerTypes'
 
@@ -98,6 +98,16 @@ export function useImageAnalysis(): UseImageAnalysisResult {
     setProgress(0)
     setTags([])
     setError(null)
+  }, [])
+
+  // Revoca el ultimo object URL vigente al desmontar, para no filtrar el blob
+  // si el componente se desmonta sin pasar antes por reset/selectFile.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
   }, [])
 
   return {

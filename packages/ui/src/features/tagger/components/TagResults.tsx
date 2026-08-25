@@ -1,4 +1,5 @@
 import type { Tag } from '../taggerTypes'
+import { ProgressBar } from '../../../shared/components/ProgressBar'
 
 interface TagResultsProps {
   tags: Tag[]
@@ -6,39 +7,34 @@ interface TagResultsProps {
 
 /**
  * Lista de resultados del analisis: una etiqueta por fila con su nivel de
- * confianza como porcentaje entero redondeado. Si no hay tags, muestra un
- * mensaje de estado vacio en vez de la lista.
+ * confianza (0-1) mostrado como barra + porcentaje via el componente compartido
+ * `ProgressBar`. Si no hay tags, muestra un mensaje de estado vacio. El
+ * contenedor usa `aria-live` para que los lectores de pantalla anuncien los
+ * resultados cuando el analisis termina.
  */
 export function TagResults({ tags }: TagResultsProps) {
   if (tags.length === 0) {
     return (
-      <p className="text-base-content/70">No se encontraron etiquetas para esta imagen.</p>
+      <p aria-live="polite" className="text-base-content/70">
+        No se encontraron etiquetas para esta imagen.
+      </p>
     )
   }
 
   return (
-    <div className="card bg-base-100 shadow-sm w-full max-w-md">
+    <div aria-live="polite" className="card bg-base-100 shadow-sm w-full max-w-md">
       <div className="card-body gap-3">
         <h2 className="card-title text-base">Etiquetas</h2>
 
         <ul className="flex flex-col gap-3">
-          {tags.map((tag) => {
-            const percentage = Math.round(tag.confidence * 100)
-
-            return (
-              <li key={tag.label} className="flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate">{tag.label}</span>
-                  <span className="badge badge-primary badge-sm shrink-0">{percentage}%</span>
-                </div>
-                <progress
-                  className="progress progress-primary w-full"
-                  value={percentage}
-                  max={100}
-                />
-              </li>
-            )
-          })}
+          {tags.map((tag, index) => (
+            // Los labels pueden repetirse o venir vacios (fallback del adapter),
+            // asi que se combina con el indice para una key estable y unica.
+            <li key={`${tag.label}-${index}`} className="flex flex-col gap-1">
+              <span className="truncate">{tag.label}</span>
+              <ProgressBar value={tag.confidence * 100} />
+            </li>
+          ))}
         </ul>
       </div>
     </div>
