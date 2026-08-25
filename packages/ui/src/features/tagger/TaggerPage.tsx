@@ -1,18 +1,18 @@
+import { AnalysisControls } from './components/AnalysisControls'
 import { ImageUploader } from './components/ImageUploader'
 import { TagResults } from './components/TagResults'
 import { useImageAnalysis } from './hooks/useImageAnalysis'
-import { ErrorAlert } from '../../shared/components/ErrorAlert'
-import { ProgressBar } from '../../shared/components/ProgressBar'
-import { Spinner } from '../../shared/components/Spinner'
 
 /**
  * Pagina principal del feature "tagger": compone el hook `useImageAnalysis`
  * con los componentes presentacionales para cubrir todo el flujo (seleccion
  * de imagen, subida con progreso, procesamiento por IA, y resultado --
- * etiquetas o error con reintento).
+ * etiquetas o error con reintento). `ImageUploader` solo selecciona y
+ * previsualiza; `AnalysisControls` aisla toda la interaccion dirigida por el
+ * estado del analisis (disparo, progreso, procesamiento, error y reinicio).
  */
 export function TaggerPage() {
-  const { status, previewUrl, progress, tags, error, selectFile, analyze } =
+  const { status, previewUrl, progress, tags, error, selectFile, analyze, reset } =
     useImageAnalysis()
 
   // La subida y el procesamiento por IA deshabilitan el uploader para evitar
@@ -23,28 +23,15 @@ export function TaggerPage() {
     <section className="flex w-full flex-col items-center gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Analizador de imágenes</h1>
 
-      <ImageUploader
-        previewUrl={previewUrl}
-        disabled={isBusy}
-        onFileSelected={selectFile}
+      <ImageUploader previewUrl={previewUrl} disabled={isBusy} onFileSelected={selectFile} />
+
+      <AnalysisControls
+        status={status}
+        progress={progress}
+        error={error}
         onAnalyze={analyze}
+        onReset={reset}
       />
-
-      {status === 'uploading' && (
-        <div className="w-full max-w-md">
-          <ProgressBar value={progress} label="Subiendo imagen…" />
-        </div>
-      )}
-
-      {status === 'processing' && <Spinner label="Procesando…" />}
-
-      {status === 'error' && error && (
-        // Reintentar vuelve a invocar el analisis: el archivo sigue
-        // seleccionado en el hook, asi que `analyze` no es un no-op.
-        <div className="w-full max-w-md">
-          <ErrorAlert message={error} onRetry={analyze} />
-        </div>
-      )}
 
       {status === 'success' && <TagResults tags={tags} />}
     </section>

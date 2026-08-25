@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { ImageUploader } from './ImageUploader'
 
 // Contrato de props que consume el componente. Se declara localmente a proposito:
-// el componente aun no existe (lo crea el implementador), asi que no importamos
-// sus tipos; esta interfaz solo tipa las props que pasamos en los tests.
+// esta interfaz solo tipa las props que pasamos en los tests. Tras el refactor,
+// el disparo del analisis (boton "Analizar"/onAnalyze) ya NO vive aqui: lo
+// provee `AnalysisControls`. Este componente solo selecciona y previsualiza.
 interface ImageUploaderProps {
   previewUrl: string | null
   disabled?: boolean
   acceptedTypes?: string[]
   maxSizeBytes?: number
   onFileSelected: (file: File) => void
-  onAnalyze: () => void
 }
 
 // Renderiza el componente y expone un getter perezoso del input oculto de
@@ -34,7 +34,6 @@ describe('ImageUploader', () => {
     const { getFileInput } = renderUploader({
       previewUrl: null,
       onFileSelected: vi.fn(),
-      onAnalyze: vi.fn(),
     })
 
     // Texto instructivo de arrastrar/soltar (matcher flexible: define el copy el
@@ -46,6 +45,11 @@ describe('ImageUploader', () => {
     ).toBeInTheDocument()
     // react-dropzone renderiza un <input type="file"> via getInputProps.
     expect(getFileInput()).toBeInTheDocument()
+    // Tras el refactor el boton "Analizar" ya NO vive en el uploader: ahora lo
+    // provee AnalysisControls. Su ausencia forma parte del nuevo contrato.
+    expect(
+      screen.queryByRole('button', { name: /analizar/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('llama onFileSelected una sola vez con el File al subir una imagen valida', async () => {
@@ -54,7 +58,6 @@ describe('ImageUploader', () => {
     const { getFileInput } = renderUploader({
       previewUrl: null,
       onFileSelected,
-      onAnalyze: vi.fn(),
     })
     const file = createFile('bytes', 'foto.png', 'image/png')
 
@@ -77,7 +80,6 @@ describe('ImageUploader', () => {
     const { getFileInput } = renderUploader({
       previewUrl: null,
       onFileSelected,
-      onAnalyze: vi.fn(),
     })
     const file = createFile('x', 'notas.txt', 'text/plain')
 
@@ -96,7 +98,6 @@ describe('ImageUploader', () => {
       previewUrl: null,
       maxSizeBytes: 10,
       onFileSelected,
-      onAnalyze: vi.fn(),
     })
     // Imagen valida por tipo pero con mas de 10 bytes: el unico rechazo posible
     // es el de tamano (no el de formato).
@@ -115,7 +116,6 @@ describe('ImageUploader', () => {
     renderUploader({
       previewUrl: 'blob:xyz',
       onFileSelected: vi.fn(),
-      onAnalyze: vi.fn(),
     })
 
     const img = screen.getByRole('img')
@@ -124,42 +124,13 @@ describe('ImageUploader', () => {
     expect(img).toHaveAccessibleName()
   })
 
-  it('deshabilita el boton "Analizar" cuando no hay preview', () => {
-    renderUploader({
-      previewUrl: null,
-      onFileSelected: vi.fn(),
-      onAnalyze: vi.fn(),
-    })
-
-    expect(screen.getByRole('button', { name: /analizar/i })).toBeDisabled()
-  })
-
-  it('habilita "Analizar" con preview y llama onAnalyze una sola vez al hacer click', async () => {
-    const user = userEvent.setup()
-    const onAnalyze = vi.fn()
-    renderUploader({
-      previewUrl: 'blob:xyz',
-      onFileSelected: vi.fn(),
-      onAnalyze,
-    })
-
-    const analyzeButton = screen.getByRole('button', { name: /analizar/i })
-    expect(analyzeButton).toBeEnabled()
-
-    await user.click(analyzeButton)
-
-    expect(onAnalyze).toHaveBeenCalledTimes(1)
-  })
-
-  it('deshabilita "Analizar" y "Seleccionar imagen" cuando disabled es true', () => {
+  it('deshabilita el boton "Seleccionar imagen" cuando disabled es true', () => {
     renderUploader({
       previewUrl: 'blob:xyz',
       disabled: true,
       onFileSelected: vi.fn(),
-      onAnalyze: vi.fn(),
     })
 
-    expect(screen.getByRole('button', { name: /analizar/i })).toBeDisabled()
     expect(
       screen.getByRole('button', { name: /seleccionar imagen/i }),
     ).toBeDisabled()

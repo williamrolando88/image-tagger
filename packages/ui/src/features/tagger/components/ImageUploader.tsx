@@ -12,7 +12,6 @@ interface ImageUploaderProps {
   acceptedTypes?: string[]
   maxSizeBytes?: number
   onFileSelected: (file: File) => void
-  onAnalyze: () => void
 }
 
 // Traduce el primer codigo de rechazo de react-dropzone a un mensaje en
@@ -34,8 +33,9 @@ function buildRejectionMessage(rejection: FileRejection, maxSizeBytes: number): 
 
 /**
  * Area de subida de imagenes: arrastrar y soltar (via react-dropzone) o
- * boton de fallback. Muestra la preview de la imagen seleccionada, errores
- * de validacion (tipo/tamano) y el boton para disparar el analisis.
+ * boton de fallback. Muestra la preview de la imagen seleccionada y los
+ * errores de validacion (tipo/tamano). El disparo del analisis vive en
+ * `AnalysisControls`.
  */
 export function ImageUploader({
   previewUrl,
@@ -43,7 +43,6 @@ export function ImageUploader({
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
   maxSizeBytes = DEFAULT_MAX_SIZE_BYTES,
   onFileSelected,
-  onAnalyze,
 }: ImageUploaderProps) {
   const [validationError, setValidationError] = useState<string | null>(null)
 
@@ -117,15 +116,6 @@ export function ImageUploader({
             <span>{validationError}</span>
           </div>
         )}
-
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={onAnalyze}
-          disabled={!previewUrl || disabled}
-        >
-          Analizar
-        </button>
       </div>
     </div>
   )

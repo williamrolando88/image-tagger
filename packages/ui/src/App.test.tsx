@@ -41,17 +41,19 @@ describe('App (integracion ligera)', () => {
   it('monta la pagina del analizador (TaggerPage)', async () => {
     render(<App />)
 
-    // TaggerPage compone el uploader, que siempre renderiza el boton
-    // "Analizar" (deshabilitado hasta seleccionar imagen). findByRole ademas
-    // deja asentar la actualizacion async del health check (evita warnings de
-    // act) sin acoplar este caso a un estado de conexion concreto.
+    // Tras el refactor R1 el boton "Analizar" lo provee AnalysisControls solo en
+    // status === 'fileSelected'; en el render inicial (idle) no hay controles.
+    // Anclamos el montaje de TaggerPage a su encabezado, que es estable en todos
+    // los estados. findByRole ademas deja asentar la actualizacion async del
+    // health check (evita warnings de act) sin acoplar este caso a un estado de
+    // conexion concreto.
     expect(
-      await screen.findByRole('button', { name: /analizar/i }),
+      await screen.findByRole('heading', { name: /analizador de imágenes/i }),
     ).toBeInTheDocument()
 
-    // Opcional: el encabezado de la pagina del analizador.
+    // El uploader siempre expone su boton de seleccion en el estado inicial.
     expect(
-      screen.getByRole('heading', { name: /analizador de imágenes/i }),
+      screen.getByRole('button', { name: /seleccionar imagen/i }),
     ).toBeInTheDocument()
   })
 
