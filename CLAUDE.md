@@ -36,6 +36,20 @@ pnpm --filter picture-tagger-api test       # tests backend (cuando existan)
 pnpm --filter picture-tagger-frontend test  # tests frontend (cuando existan)
 ```
 
+### Docker (producción)
+
+Para levantar toda la app containerizada con un comando:
+
+```bash
+cp .env.example .env   # completa IMAGGA_API_KEY / IMAGGA_API_SECRET
+docker compose up --build
+```
+
+- App en **http://localhost:8080** — nginx sirve el frontend y proxya `/api` al backend.
+- El backend **no se expone al host**: solo accesible por el proxy de nginx (red interna de compose).
+- Secretos (claves de Imagga) vía `.env` en la raíz (gitignored); ver `.env.example`.
+- Docker es solo para **producción/ejecución**; el desarrollo con hot-reload sigue siendo `pnpm dev`.
+
 ## Arquitectura del backend (modular por features)
 
 El backend (`packages/api`) se organiza de forma **modular por features**, no por capas

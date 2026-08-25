@@ -1,0 +1,39 @@
+# Orquestacion de produccion: levanta backend (api) + frontend (ui) con
+#   docker compose up --build
+# El navegador accede a la app en http://localhost:8080 (nginx), que sirve los
+# estaticos y proxya /api al backend por la red interna de compose.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    environment:
+      PORT: "3000"
+      # Origen del frontend (nginx). Mismo-origen por el proxy, pero el backend
+      # exige esta variable para arrancar.
+      CORS_ORIGIN: "http://localhost:8080"
+      # Secretos: se leen del archivo .env (ver .env.example). Requeridos.
+      IMAGGA_API_KEY: ${IMAGGA_API_KEY:?Define IMAGGA_API_KEY en .env (ver .env.example)}
+      IMAGGA_API_SECRET: ${IMAGGA_API_SECRET:?Define IMAGGA_API_SECRET en .env (ver .env.example)}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-10}
+    # No se expone al host: solo accesible por la red interna (via el proxy de ui).
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  ui:
+    build:
+      context: .
+      dockerfile: packages/ui/Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      # nginx resuelve el host `api` al arrancar, asi que espera a que este sano.
+      api:
+        condition: service_healthy
+    restart: unless-stopped
