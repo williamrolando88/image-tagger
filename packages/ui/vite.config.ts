@@ -4,15 +4,16 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  // VITE_API_URL vive en packages/ui/.env — es el backend al que el proxy de
-  // Vite reenvia. Es REQUERIDO (sin fallback): sin el, el proxy no sabria a
-  // donde apuntar y el frontend no podria hablar con el API.
+export default defineConfig(({ command, mode }) => {
+  // VITE_API_URL es el backend al que el proxy de Vite reenvia en desarrollo.
+  // Solo se REQUIERE en modo dev (`command === 'serve'`): ahi el proxy lo usa.
+  // En `build` (produccion) el frontend se compila a estaticos y nginx proxya
+  // /api al backend (ver packages/ui/Dockerfile), asi que no hace falta.
   const env = loadEnv(mode, process.cwd(), '')
   const apiUrl = env.VITE_API_URL
-  if (!apiUrl) {
+  if (command === 'serve' && !apiUrl) {
     throw new Error(
-      'VITE_API_URL es requerido. Definelo en packages/ui/.env (ver .env.example).',
+      'VITE_API_URL es requerido en desarrollo. Definelo en packages/ui/.env (ver .env.example).',
     )
   }
 
