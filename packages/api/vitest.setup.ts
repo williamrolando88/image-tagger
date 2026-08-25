@@ -8,3 +8,6 @@ process.env.PORT ??= '3000';
 process.env.CORS_ORIGIN ??= 'http://localhost:5173';
 process.env.IMAGGA_API_KEY ??= 'test-key';
 process.env.IMAGGA_API_SECRET ??= 'test-secret';
+// Limite de tamano pequeno (1 MB) para poder probar el rechazo por tamano con un
+// buffer chico en el test de endpoint, sin generar payloads enormes.
+process.env.MAX_FILE_SIZE_MB ??= '1';

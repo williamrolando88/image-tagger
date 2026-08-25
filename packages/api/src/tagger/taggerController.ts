@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { AppError } from '../common/errors/appError.js';
 import { analyzeImage } from './services/imaggaAdapter.js';
 
 // Controller del modulo tagger: recibe la imagen ya parseada por el
@@ -9,9 +10,11 @@ import { analyzeImage } from './services/imaggaAdapter.js';
 // async al error handler, asi que no hace falta un try/catch aqui.
 export async function analyze(req: Request, res: Response): Promise<void> {
   if (!req.file) {
-    // Manejo minimo: el error handler centralizado y los mensajes finos de
-    // validacion llegan en una sub-tarea posterior.
-    throw new Error('No se recibio ningun archivo de imagen.');
+    throw new AppError(
+      400,
+      'NO_FILE',
+      'No se recibió ningún archivo de imagen.',
+    );
   }
 
   const tags = await analyzeImage(req.file.buffer, req.file.originalname);

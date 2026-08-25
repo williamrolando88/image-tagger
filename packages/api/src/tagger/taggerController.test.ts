@@ -98,4 +98,56 @@ describe('POST /api/analyze — endpoint de análisis de imágenes', () => {
       expect(response.body.error.message.length).toBeGreaterThan(0);
     });
   });
+
+  describe('validación de archivo — tipo, tamaño y ausencia', () => {
+    // En estos casos el rechazo debe ocurrir por VALIDACIÓN, antes de tocar
+    // Imagga. Por eso se mockea `fetch` con éxito: si a pesar de ello la
+    // respuesta no es el error de validación esperado (o se llama a Imagga),
+    // sabemos que la validación no cortó el flujo. Todos los rechazos fluyen por
+    // el error handler central → forma `{ error: { message, code } }`.
+
+    it('responde 415 con code "INVALID_FILE_TYPE" cuando el archivo no es una imagen (mimetype fuera de la whitelist)', async () => {
+      fetchMock.mockResolvedValue(mockResponse(imaggaSuccessBody));
+      const app = createApp();
+
+      const response = await request(app)
+        .post('/api/analyze')
+        .attach('image', Buffer.from('esto no es imagen'), {
+          filename: 'notes.txt',
+          contentType: 'text/plain',
+        });
+
+      expect(response.status).toBe(415);
+      expect(response.body.error.code).toBe('INVALID_FILE_TYPE');
+      // La validación de tipo corta ANTES del adapter: nunca se llama a Imagga.
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('responde 413 con code "FILE_TOO_LARGE" cuando el archivo supera MAX_FILE_SIZE_MB', async () => {
+      fetchMock.mockResolvedValue(mockResponse(imaggaSuccessBody));
+      const app = createApp();
+
+      // vitest.setup.ts fija MAX_FILE_SIZE_MB=1, así que 1 MiB + 1 byte lo supera.
+      // El mimetype es válido (image/jpeg) para aislar el fallo al tamaño.
+      const response = await request(app)
+        .post('/api/analyze')
+        .attach('image', Buffer.alloc(1024 * 1024 + 1), {
+          filename: 'big.jpg',
+          contentType: 'image/jpeg',
+        });
+
+      expect(response.status).toBe(413);
+      expect(response.body.error.code).toBe('FILE_TOO_LARGE');
+    });
+
+    it('responde 400 con code "NO_FILE" cuando no se adjunta ningún archivo', async () => {
+      fetchMock.mockResolvedValue(mockResponse(imaggaSuccessBody));
+      const app = createApp();
+
+      const response = await request(app).post('/api/analyze');
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe('NO_FILE');
+    });
+  });
 });

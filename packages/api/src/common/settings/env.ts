@@ -45,10 +45,15 @@ if (!imaggaApiSecret) {
 // Idioma de los tags devueltos por Imagga. Opcional: por defecto ingles ('en').
 const imaggaTagLanguage = process.env.IMAGGA_TAG_LANGUAGE ?? 'en';
 
+// Tamano maximo permitido para la imagen subida, en MB. Opcional: por
+// defecto 10 MB.
+const maxFileSizeMb = Number(process.env.MAX_FILE_SIZE_MB ?? 10);
+
 export const env = {
   port,
   corsOrigin,
   imaggaApiKey,
   imaggaApiSecret,
   imaggaTagLanguage,
+  maxFileSizeMb,
 };
