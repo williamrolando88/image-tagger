@@ -36,6 +36,62 @@ pnpm --filter picture-tagger-api test       # tests backend (cuando existan)
 pnpm --filter picture-tagger-frontend test  # tests frontend (cuando existan)
 ```
 
+## Arquitectura del backend (modular por features)
+
+El backend (`packages/api`) se organiza de forma **modular por features**, no por capas
+técnicas globales. Objetivo: una base **escalable y ordenada** donde cada feature es un
+módulo autocontenido y lo transversal vive en `common/`. Un módulo nuevo se agrega sin
+tocar los existentes.
+
+```
+packages/api/src/
+├── common/                        # Transversal a todos los módulos
+│   ├── settings/
+│   │   ├── env.ts                 # Carga y validación de variables de entorno
+│   │   └── cors.ts                # Configuración/middleware de CORS
+│   └── errors/
+│       ├── appError.ts            # Error tipado (statusCode + code)
+│       └── errorHandler.ts        # Middleware de error centralizado -> JSON
+├── tagger/                        # Feature principal: análisis de imágenes
+│   ├── taggerController.ts
+│   ├── taggerController.test.ts   # Tests de ENDPOINT (Supertest), junto al controller
+│   ├── taggerRoutes.ts
+│   ├── taggerTypes.ts
+│   ├── middleware/
+│   │   └── uploadMiddleware.ts    # multer (memoria) + validación tipo/tamaño
+│   └── services/
+│       ├── imaggaAdapter.ts       # Integración con Imagga (adapter)
+│       └── imaggaAdapter.test.ts  # Test UNITARIO, junto a su archivo
+├── health/                        # Feature health (mínima, misma convención)
+│   ├── healthController.ts
+│   ├── healthController.test.ts
+│   └── healthRoutes.ts
+├── app.ts                         # createApp(): monta módulos bajo /api + middleware común
+└── index.ts                       # bootstrap: valida env, crea app, listen
+```
+
+### Reglas de arquitectura
+
+- **Módulos por feature:** cada feature (`tagger`, `health`, …) es una carpeta
+  autocontenida con su `controller`, `routes`, `types`, y sub-carpetas (`services`,
+  `middleware`) según necesite.
+- **Lo transversal va en `common/`:** configuración (`settings/`: env, cors) y utilidades
+  compartidas (`errors/`). CORS y env **no** viven dentro de un módulo.
+- **Integraciones externas como adapters:** los clientes de servicios externos se nombran
+  `<servicio>Adapter.ts` (ej. `imaggaAdapter.ts`) y viven en `services/` del módulo.
+- **Tests colocados con su código (sin carpeta `tests/` separada):**
+  - Tests **unitarios** → junto al archivo que prueban (`imaggaAdapter.ts` +
+    `imaggaAdapter.test.ts`).
+  - Tests de **endpoint** (integración con Supertest) → junto al `controller` del módulo,
+    en el nivel más cercano a la raíz del módulo (`taggerController.test.ts`).
+- **Nomenclatura de archivos:** camelCase (`imaggaAdapter.ts`, `taggerController.ts`).
+- **`app.ts` ensambla, `index.ts` arranca:** `app.ts` exporta `createApp()` (testeable, sin
+  `listen`); `index.ts` valida env y levanta el servidor.
+
+Esta convención aplica a **todas las ejecuciones de agentes y subagentes**: el
+`qa-engineer` coloca los tests según estas reglas y el `implementer` respeta la estructura
+modular.
+
 ## Requisitos funcionales (fuente de verdad para QA)
 
 - **`POST /api/analyze`**: recibe una imagen (`multipart/form-data`), la envía a Imagga
