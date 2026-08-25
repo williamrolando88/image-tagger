@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { requireEnv, parseOptionalPositiveInt } from './envParsers.js';
 
 // Carga y validacion centralizada de variables de entorno para toda la API.
 // Cualquier variable nueva (ej. credenciales de Imagga) se agrega aqui, no en
@@ -15,39 +16,32 @@ try {
 }
 
 // PORT es opcional: si no viene definido, el servidor arranca en 3000.
-const port = Number(process.env.PORT ?? 3000);
+const port = parseOptionalPositiveInt(process.env.PORT, 'PORT', 3000);
 
 // Origen (URL) del frontend permitido. Es REQUERIDO (sin fallback): se lee del
-// .env y queda reservado para habilitar CORS o validacion de URL a futuro.
-const corsOrigin = process.env.CORS_ORIGIN;
-if (!corsOrigin) {
-  throw new Error(
-    'CORS_ORIGIN es requerido. Definelo en packages/api/.env (ver .env.example).',
-  );
-}
+// .env y lo usa el middleware de CORS (common/settings/cors.ts) para
+// restringir que solo ese origen pueda consumir la API desde el navegador.
+const corsOrigin = requireEnv(process.env.CORS_ORIGIN, 'CORS_ORIGIN');
 
 // Credenciales de Imagga. Son REQUERIDAS (sin fallback): sin ellas el adapter
 // no puede autenticarse contra la API externa.
-const imaggaApiKey = process.env.IMAGGA_API_KEY;
-if (!imaggaApiKey) {
-  throw new Error(
-    'IMAGGA_API_KEY es requerido. Definelo en packages/api/.env (ver .env.example).',
-  );
-}
+const imaggaApiKey = requireEnv(process.env.IMAGGA_API_KEY, 'IMAGGA_API_KEY');
 
-const imaggaApiSecret = process.env.IMAGGA_API_SECRET;
-if (!imaggaApiSecret) {
-  throw new Error(
-    'IMAGGA_API_SECRET es requerido. Definelo en packages/api/.env (ver .env.example).',
-  );
-}
+const imaggaApiSecret = requireEnv(
+  process.env.IMAGGA_API_SECRET,
+  'IMAGGA_API_SECRET',
+);
 
 // Idioma de los tags devueltos por Imagga. Opcional: por defecto ingles ('en').
 const imaggaTagLanguage = process.env.IMAGGA_TAG_LANGUAGE ?? 'en';
 
 // Tamano maximo permitido para la imagen subida, en MB. Opcional: por
 // defecto 10 MB.
-const maxFileSizeMb = Number(process.env.MAX_FILE_SIZE_MB ?? 10);
+const maxFileSizeMb = parseOptionalPositiveInt(
+  process.env.MAX_FILE_SIZE_MB,
+  'MAX_FILE_SIZE_MB',
+  10,
+);
 
 export const env = {
   port,
