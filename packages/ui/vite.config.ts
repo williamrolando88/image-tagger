@@ -22,12 +22,12 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       // Proxy de las llamadas al backend para hablar con un unico origen en dev
-      // (sin CORS). `/api/health` -> `${VITE_API_URL}/health`.
+      // (sin CORS). El backend ahora sirve sus rutas bajo /api, asi que se
+      // reenvia tal cual: `/api/health` -> `${VITE_API_URL}/api/health`.
       proxy: {
         '/api': {
           target: apiUrl,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
     },
