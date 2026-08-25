@@ -1,0 +1,26 @@
+# El contexto de build es la raiz del repo; este .dockerignore aplica a ambas
+# imagenes (api y ui). Se excluye lo que se instala/genera dentro de la imagen
+# o que no debe entrar (secretos, control de versiones, caches).
+
+# Dependencias y artefactos de build (se generan dentro de la imagen)
+**/node_modules
+**/dist
+
+# Control de versiones y herramientas locales
+.git
+.gitignore
+.github
+.claude
+
+# Entornos y secretos: NUNCA deben entrar a la imagen
+**/.env
+**/.env.*
+
+# Caches / salidas de test
+**/coverage
+**/.vite
+
+# Archivos Docker (no se necesitan dentro del contexto)
+**/Dockerfile
+.dockerignore
+docker-compose.yml
