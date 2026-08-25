@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { analyzeImage } from './imaggaAdapter';
+import { IMAGGA_TAG_LANGUAGE } from '../taggerConstants';
 
 // Test UNITARIO del adapter de Imagga, colocado junto a imaggaAdapter.ts.
 //
 // Fija el CONTRATO del adapter sin llamar a la API real: se mockea el `fetch`
 // nativo. Las credenciales del entorno de test las provee vitest.setup.ts
-// (IMAGGA_API_KEY=test-key, IMAGGA_API_SECRET=test-secret).
+// (IMAGGA_API_KEY=test-key, IMAGGA_API_SECRET=test-secret). El idioma de los
+// tags es una constante de codigo (IMAGGA_TAG_LANGUAGE), no una env var.
 
 // Credencial esperada en el header Authorization: Basic base64(key:secret).
 const expectedAuth =
@@ -44,12 +46,13 @@ function getAuthHeader(init: RequestInit | undefined): string | null {
 // Respuesta de éxito real de Imagga v2 /tags, con tags DESORDENADOS por
 // confidence para verificar que el adapter los ordena. Confidences enteras para
 // que la normalización (/100) sea exacta y no dependa de tolerancia de flotantes.
+// Las etiquetas vienen en la clave del idioma configurado ('es').
 const imaggaSuccessBody = {
   result: {
     tags: [
-      { confidence: 91, tag: { en: 'dog' } },
-      { confidence: 88, tag: { en: 'park' } },
-      { confidence: 98, tag: { en: 'grass' } },
+      { confidence: 91, tag: { es: 'perro' } },
+      { confidence: 88, tag: { es: 'parque' } },
+      { confidence: 98, tag: { es: 'cesped' } },
     ],
   },
   status: { type: 'success', text: '' },
@@ -79,15 +82,15 @@ describe('analyzeImage — adapter de Imagga', () => {
       const result = await analyzeImage(Buffer.from('img'), 'photo.jpg');
 
       expect(result).toEqual([
-        { label: 'grass', confidence: 0.98 },
-        { label: 'dog', confidence: 0.91 },
-        { label: 'park', confidence: 0.88 },
+        { label: 'cesped', confidence: 0.98 },
+        { label: 'perro', confidence: 0.91 },
+        { label: 'parque', confidence: 0.88 },
       ]);
     });
   });
 
   describe('request — autenticación y endpoint', () => {
-    it('hace POST al endpoint v2/tags de Imagga con query language=en por defecto', async () => {
+    it('hace POST al endpoint v2/tags de Imagga con el idioma configurado en la query', async () => {
       fetchMock.mockResolvedValue(mockResponse(imaggaSuccessBody));
 
       await analyzeImage(Buffer.from('img'), 'photo.jpg');
@@ -98,7 +101,7 @@ describe('analyzeImage — adapter de Imagga', () => {
         RequestInit | undefined,
       ];
       expect(String(url)).toContain('https://api.imagga.com/v2/tags');
-      expect(String(url)).toContain('language=en');
+      expect(String(url)).toContain(`language=${IMAGGA_TAG_LANGUAGE}`);
       expect(init?.method?.toUpperCase()).toBe('POST');
     });
 
@@ -129,18 +132,49 @@ describe('analyzeImage — adapter de Imagga', () => {
     });
   });
 
+  describe('idioma de tags', () => {
+    it('prefiere el idioma configurado sobre inglés cuando el tag trae ambos', async () => {
+      // Con etiqueta en el idioma configurado ('es') Y en inglés, debe ganar el
+      // idioma configurado (fija la precedencia `tag[lang] ?? tag.en`).
+      fetchMock.mockResolvedValue(
+        mockResponse({
+          result: { tags: [{ confidence: 90, tag: { es: 'perro', en: 'dog' } }] },
+          status: { type: 'success', text: '' },
+        }),
+      );
+
+      const result = await analyzeImage(Buffer.from('img'), 'photo.jpg');
+
+      expect(result).toEqual([{ label: 'perro', confidence: 0.9 }]);
+    });
+
+    it('cae a inglés cuando el tag no trae la etiqueta en el idioma configurado', async () => {
+      // El tag solo tiene 'en' (no el idioma configurado): debe usar el respaldo.
+      fetchMock.mockResolvedValue(
+        mockResponse({
+          result: { tags: [{ confidence: 90, tag: { en: 'dog' } }] },
+          status: { type: 'success', text: '' },
+        }),
+      );
+
+      const result = await analyzeImage(Buffer.from('img'), 'photo.jpg');
+
+      expect(result).toEqual([{ label: 'dog', confidence: 0.9 }]);
+    });
+  });
+
   describe('errores', () => {
-    it('lanza cuando la respuesta HTTP no es ok (ej. 500)', async () => {
+    it('lanza AppError 502 AI_SERVICE_ERROR cuando la respuesta HTTP no es ok (ej. 500)', async () => {
       fetchMock.mockResolvedValue(
         mockResponse({}, { ok: false, status: 500 }),
       );
 
       await expect(
         analyzeImage(Buffer.from('img'), 'photo.jpg'),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ statusCode: 502, code: 'AI_SERVICE_ERROR' });
     });
 
-    it('lanza cuando el body reporta status.type === "error"', async () => {
+    it('lanza AppError 502 AI_SERVICE_ERROR cuando el body reporta status.type === "error"', async () => {
       fetchMock.mockResolvedValue(
         mockResponse(
           { status: { type: 'error', text: 'algo salió mal' }, result: { tags: [] } },
@@ -150,63 +184,22 @@ describe('analyzeImage — adapter de Imagga', () => {
 
       await expect(
         analyzeImage(Buffer.from('img'), 'photo.jpg'),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ statusCode: 502, code: 'AI_SERVICE_ERROR' });
     });
-  });
-});
 
-// Regresión: el adapter debe leer el label del idioma configurado
-// (IMAGGA_TAG_LANGUAGE), no siempre `tag.en`.
-//
-// Este describe está AISLADO del anterior porque `env.imaggaTagLanguage` se
-// resuelve al importar `../../common/settings/env`, que a su vez se importa al
-// cargar `./imaggaAdapter`. Para que el adapter tome un idioma distinto de 'en'
-// hay que cambiar la env ANTES de (re)importar ambos módulos:
-//   1) vi.stubEnv('IMAGGA_TAG_LANGUAGE', 'es')
-//   2) vi.resetModules()  -> descarta el grafo de módulos cacheado (env + adapter)
-//   3) await import('./imaggaAdapter')  -> reimporta con la env ya aplicada
-// Todo se restaura en afterEach (unstubAllEnvs + resetModules) para no
-// contaminar los casos por defecto ('en') del describe de arriba.
-describe('analyzeImage — idioma de tags configurable (IMAGGA_TAG_LANGUAGE)', () => {
-  const fetchMock = vi.fn();
+    it('lanza AppError 502 AI_SERVICE_ERROR cuando la respuesta no cumple el schema (tipado fuerte)', async () => {
+      // confidence llega como string: la validación con zod debe rechazarla en
+      // vez de propagar datos malformados.
+      fetchMock.mockResolvedValue(
+        mockResponse({
+          result: { tags: [{ confidence: 'muy alta', tag: { es: 'perro' } }] },
+          status: { type: 'success', text: '' },
+        }),
+      );
 
-  beforeEach(() => {
-    fetchMock.mockClear();
-    vi.stubGlobal('fetch', fetchMock);
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
-    vi.resetModules();
-    vi.restoreAllMocks();
-  });
-
-  it('lee el label en el idioma configurado (es) cuando Imagga devuelve tag.es', async () => {
-    // La env se aplica antes de reimportar los módulos que la leen.
-    vi.stubEnv('IMAGGA_TAG_LANGUAGE', 'es');
-    vi.resetModules();
-    const { analyzeImage: analyzeImageEs } = await import('./imaggaAdapter');
-
-    // Respuesta de Imagga con la etiqueta bajo la clave 'es' (sin 'en'),
-    // desordenada por confidence para verificar también el orden descendente.
-    fetchMock.mockResolvedValue(
-      mockResponse({
-        result: {
-          tags: [
-            { confidence: 95, tag: { es: 'perro' } },
-            { confidence: 80, tag: { es: 'parque' } },
-          ],
-        },
-        status: { type: 'success', text: '' },
-      }),
-    );
-
-    const result = await analyzeImageEs(Buffer.from('img'), 'photo.jpg');
-
-    expect(result).toEqual([
-      { label: 'perro', confidence: 0.95 },
-      { label: 'parque', confidence: 0.8 },
-    ]);
+      await expect(
+        analyzeImage(Buffer.from('img'), 'photo.jpg'),
+      ).rejects.toMatchObject({ statusCode: 502, code: 'AI_SERVICE_ERROR' });
+    });
   });
 });

@@ -47,7 +47,8 @@ tocar los existentes.
 packages/api/src/
 ├── common/                        # Transversal a todos los módulos
 │   ├── settings/
-│   │   ├── env.ts                 # Carga y validación de variables de entorno
+│   │   ├── env.ts                 # Carga env (.env) y expone config validada
+│   │   ├── envSchema.ts           # Schema zod + parseEnv() para validar el entorno
 │   │   └── cors.ts                # Configuración/middleware de CORS
 │   └── errors/
 │       ├── appError.ts            # Error tipado (statusCode + code)
@@ -57,6 +58,7 @@ packages/api/src/
 │   ├── taggerController.test.ts   # Tests de ENDPOINT (Supertest), junto al controller
 │   ├── taggerRoutes.ts
 │   ├── taggerTypes.ts
+│   ├── taggerConstants.ts        # Constantes del feature (ej. idioma de tags)
 │   ├── middleware/
 │   │   └── uploadMiddleware.ts    # multer (memoria) + validación tipo/tamaño
 │   └── services/
