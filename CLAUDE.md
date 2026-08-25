@@ -133,10 +133,10 @@ pausada, módulo por módulo.
 | Milestone | Rama | Estado |
 |-----------|------|--------|
 | M0 — Setup & scaffolding | `main` | ✅ Completo |
-| M1 — Backend API | `feature/backend-api` | Pendiente |
-| M2 — Frontend uploader | `feature/frontend-uploader` | Pendiente |
-| M3 — Dockerización | `feature/dockerization` | Pendiente |
-| M4 — Docs & entrega | `docs` | Pendiente |
+| M1 — Backend API | mergeado a `main` | ✅ Completo |
+| M2 — Frontend uploader | mergeado a `main` | ✅ Completo |
+| M3 — Dockerización | mergeado a `main` | ✅ Completo |
+| M4 — Docs & entrega | mergeado a `main` | ✅ Completo |
 
 ### Checkpoint de planificación por milestone
 

@@ -8,5 +8,5 @@ const app = createApp();
 
 app.listen(env.port, () => {
   console.log(`API listening on http://localhost:${env.port}`);
-  console.log(`Allowed frontend origin (CORS reservado): ${env.corsOrigin}`);
+  console.log(`CORS allowed origin: ${env.corsOrigin}`);
 });
