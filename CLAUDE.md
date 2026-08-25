@@ -136,7 +136,7 @@ pausada, módulo por módulo.
 | M1 — Backend API | mergeado a `main` | ✅ Completo |
 | M2 — Frontend uploader | mergeado a `main` | ✅ Completo |
 | M3 — Dockerización | mergeado a `main` | ✅ Completo |
-| M4 — Docs & entrega | `docs` | 🔄 En curso |
+| M4 — Docs & entrega | mergeado a `main` | ✅ Completo |
 
 ### Checkpoint de planificación por milestone
 
