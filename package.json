@@ -1,0 +1,26 @@
+{
+  "name": "picture-tagger",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "mprocs",
+    "dev:api": "pnpm --filter picture-tagger-api dev",
+    "dev:ui": "pnpm --filter picture-tagger-frontend dev",
+    "build": "pnpm --recursive --stream build",
+    "lint": "pnpm --recursive --stream lint",
+    "start": "pnpm --filter picture-tagger-api start",
+    "clean": "pnpm --recursive exec rm -rf dist node_modules && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "mprocs": "^0.9.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
