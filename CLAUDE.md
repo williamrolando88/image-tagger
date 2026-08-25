@@ -66,6 +66,14 @@ pausada, módulo por módulo.
 | M3 — Dockerización | `feature/dockerization` | Pendiente |
 | M4 — Docs & entrega | `docs` | Pendiente |
 
+### Checkpoint de planificación por milestone
+
+**Antes de implementar cada milestone**, el orquestador y el equipo tienen una
+**conversación de planificación**: se presenta el desglose de sub-tareas y las decisiones
+técnicas, y se **afinan los detalles** si se encuentra que el plan puede mejorarse. Una vez
+**aceptado el plan**, el milestone se ejecuta de forma **autónoma** (ciclos TDD con
+subagentes + commits atómicos por sub-tarea), sin requerir aprobación en cada sub-tarea.
+
 ### Modelo de orquestación con subagentes
 
 - **Orquestador (sesión principal):** planifica, delega en subagentes, **revisa** su
