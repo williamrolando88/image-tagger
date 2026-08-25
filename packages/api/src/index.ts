@@ -12,9 +12,14 @@ try {
 const app = express();
 const port = process.env.PORT ?? 3000;
 
-// Origen (URL) del frontend permitido. Se lee desde el .env y queda reservado
-// para habilitar CORS o una validacion de URL a futuro (aun sin middleware).
-const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+// Origen (URL) del frontend permitido. Es REQUERIDO (sin fallback): se lee del
+// .env y queda reservado para habilitar CORS o validacion de URL a futuro.
+const corsOrigin = process.env.CORS_ORIGIN;
+if (!corsOrigin) {
+  throw new Error(
+    'CORS_ORIGIN es requerido. Definelo en packages/api/.env (ver .env.example).',
+  );
+}
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
