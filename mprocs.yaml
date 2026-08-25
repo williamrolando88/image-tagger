@@ -1,0 +1,10 @@
+# mprocs orchestrates the dev servers for every package in one terminal.
+# Run it with `pnpm dev`. Use arrow keys to switch panes, `x` to stop/start a
+# process and `q` to quit (stops every process).
+procs:
+  api:
+    shell: "pnpm --filter picture-tagger-api dev"
+    autostart: true
+  ui:
+    shell: "pnpm --filter picture-tagger-frontend dev"
+    autostart: true
