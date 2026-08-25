@@ -26,7 +26,29 @@ if (!corsOrigin) {
   );
 }
 
+// Credenciales de Imagga. Son REQUERIDAS (sin fallback): sin ellas el adapter
+// no puede autenticarse contra la API externa.
+const imaggaApiKey = process.env.IMAGGA_API_KEY;
+if (!imaggaApiKey) {
+  throw new Error(
+    'IMAGGA_API_KEY es requerido. Definelo en packages/api/.env (ver .env.example).',
+  );
+}
+
+const imaggaApiSecret = process.env.IMAGGA_API_SECRET;
+if (!imaggaApiSecret) {
+  throw new Error(
+    'IMAGGA_API_SECRET es requerido. Definelo en packages/api/.env (ver .env.example).',
+  );
+}
+
+// Idioma de los tags devueltos por Imagga. Opcional: por defecto ingles ('en').
+const imaggaTagLanguage = process.env.IMAGGA_TAG_LANGUAGE ?? 'en';
+
 export const env = {
   port,
   corsOrigin,
+  imaggaApiKey,
+  imaggaApiSecret,
+  imaggaTagLanguage,
 };
