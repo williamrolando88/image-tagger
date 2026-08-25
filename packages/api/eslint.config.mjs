@@ -11,5 +11,14 @@ export default defineConfig([
     languageOptions: {
       globals: globals.node,
     },
+    rules: {
+      // Permite prefijar con `_` parametros no usados pero requeridos por una
+      // firma externa (ej. `_req`/`_next` en el error handler de Express, que
+      // exige exactamente 4 parametros para ser reconocido como tal).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+    },
   },
 ]);

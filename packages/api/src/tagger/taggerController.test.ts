@@ -78,4 +78,24 @@ describe('POST /api/analyze — endpoint de análisis de imágenes', () => {
       });
     });
   });
+
+  describe('error de Imagga — fallo del servicio de IA', () => {
+    it('responde 502 con { error: { code: "AI_SERVICE_ERROR", message } } cuando Imagga falla (HTTP no ok)', async () => {
+      // Imagga responde con error HTTP (500): el adapter debe traducirlo a un
+      // AppError(502, "AI_SERVICE_ERROR") y el error handler centralizado debe
+      // emitir la forma JSON consistente `{ error: { message, code } }`, en vez
+      // del 500 en texto/HTML del handler por defecto de Express.
+      fetchMock.mockResolvedValue(mockResponse({}, { ok: false, status: 500 }));
+      const app = createApp();
+
+      const response = await request(app)
+        .post('/api/analyze')
+        .attach('image', Buffer.from('fake-image-bytes'), 'photo.jpg');
+
+      expect(response.status).toBe(502);
+      expect(response.body.error.code).toBe('AI_SERVICE_ERROR');
+      expect(typeof response.body.error.message).toBe('string');
+      expect(response.body.error.message.length).toBeGreaterThan(0);
+    });
+  });
 });

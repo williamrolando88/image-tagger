@@ -1,5 +1,6 @@
 import type { Tag } from '../taggerTypes.js';
 import { env } from '../../common/settings/env.js';
+import { AppError } from '../../common/errors/appError.js';
 
 // Adapter de integracion con la API de Imagga (v2/tags): envia la imagen y
 // normaliza la respuesta al contrato interno `Tag[]` (confidence 0-1, orden
@@ -51,7 +52,9 @@ export async function analyzeImage(
   });
 
   if (!res.ok) {
-    throw new Error(
+    throw new AppError(
+      502,
+      'AI_SERVICE_ERROR',
       `Imagga respondio con error (status ${res.status}) al analizar la imagen.`,
     );
   }
@@ -60,7 +63,11 @@ export async function analyzeImage(
 
   if (data.status?.type === 'error') {
     const detail = data.status.text ? `: ${data.status.text}` : '';
-    throw new Error(`Imagga reporto un error al analizar la imagen${detail}`);
+    throw new AppError(
+      502,
+      'AI_SERVICE_ERROR',
+      `Imagga reporto un error al analizar la imagen${detail}`,
+    );
   }
 
   const tags = data.result?.tags ?? [];
