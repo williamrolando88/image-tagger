@@ -4,19 +4,11 @@ import { z } from 'zod';
 // tener validacion en runtime y tipado fuerte derivado del schema (una unica
 // fuente de verdad).
 
-// Entero positivo leido del entorno. Acepta SOLO cadenas de digitos: asi un
-// valor mal escrito (ej. '0x10', '1e9', '10.0', '+10' o con espacios) falla al
-// arrancar (fail fast) en vez de coaccionarse silenciosamente a un numero
-// distinto y configurar mal el servidor. Si la variable no viene definida
-// (undefined) se usa `defaultValue`.
+// Entero positivo leido del entorno. `coerce` convierte el string del entorno a
+// number; se valida entero y positivo. Si la variable no viene definida se usa
+// `defaultValue`.
 function positiveIntEnv(defaultValue: number) {
-  return z
-    .string()
-    .regex(/^\d+$/, 'debe ser un entero positivo (solo digitos)')
-    .transform((value) => Number(value))
-    .pipe(z.number().int().positive())
-    .optional()
-    .transform((value) => value ?? defaultValue);
+  return z.coerce.number().int().positive().default(defaultValue);
 }
 
 // String requerido no vacio. `trim` evita aceptar valores en blanco (ej. '   ').

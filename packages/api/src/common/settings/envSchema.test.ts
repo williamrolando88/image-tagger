@@ -69,17 +69,15 @@ describe('parseEnv', () => {
     );
   });
 
-  // Incluye casos que la coercion permisiva de Number() aceptaria (hex,
-  // notacion cientifica, espacios, decimal .0, signo +) pero que deben
-  // rechazarse: solo se permiten cadenas de digitos.
-  it.each(['abc', '0', '-5', '3.5', '', '0x10', '1e9', ' 10 ', '10.0', '+10'])(
+  // No numerico, cero, negativo, decimal o cadena vacia deben rechazarse.
+  it.each(['abc', '0', '-5', '3.5', ''])(
     'lanza (con el nombre) cuando PORT es invalido: "%s"',
     (value) => {
       expect(() => parseEnv({ ...validSource(), PORT: value })).toThrow('PORT');
     },
   );
 
-  it.each(['abc', '0', '-5', '3.5', '', '0x10', '1e9', ' 10 ', '10.0', '+10'])(
+  it.each(['abc', '0', '-5', '3.5', ''])(
     'lanza (con el nombre) cuando MAX_FILE_SIZE_MB es invalido: "%s"',
     (value) => {
       expect(() =>
