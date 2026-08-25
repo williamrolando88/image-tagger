@@ -154,3 +154,59 @@ describe('analyzeImage — adapter de Imagga', () => {
     });
   });
 });
+
+// Regresión: el adapter debe leer el label del idioma configurado
+// (IMAGGA_TAG_LANGUAGE), no siempre `tag.en`.
+//
+// Este describe está AISLADO del anterior porque `env.imaggaTagLanguage` se
+// resuelve al importar `../../common/settings/env`, que a su vez se importa al
+// cargar `./imaggaAdapter`. Para que el adapter tome un idioma distinto de 'en'
+// hay que cambiar la env ANTES de (re)importar ambos módulos:
+//   1) vi.stubEnv('IMAGGA_TAG_LANGUAGE', 'es')
+//   2) vi.resetModules()  -> descarta el grafo de módulos cacheado (env + adapter)
+//   3) await import('./imaggaAdapter')  -> reimporta con la env ya aplicada
+// Todo se restaura en afterEach (unstubAllEnvs + resetModules) para no
+// contaminar los casos por defecto ('en') del describe de arriba.
+describe('analyzeImage — idioma de tags configurable (IMAGGA_TAG_LANGUAGE)', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockClear();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it('lee el label en el idioma configurado (es) cuando Imagga devuelve tag.es', async () => {
+    // La env se aplica antes de reimportar los módulos que la leen.
+    vi.stubEnv('IMAGGA_TAG_LANGUAGE', 'es');
+    vi.resetModules();
+    const { analyzeImage: analyzeImageEs } = await import('./imaggaAdapter');
+
+    // Respuesta de Imagga con la etiqueta bajo la clave 'es' (sin 'en'),
+    // desordenada por confidence para verificar también el orden descendente.
+    fetchMock.mockResolvedValue(
+      mockResponse({
+        result: {
+          tags: [
+            { confidence: 95, tag: { es: 'perro' } },
+            { confidence: 80, tag: { es: 'parque' } },
+          ],
+        },
+        status: { type: 'success', text: '' },
+      }),
+    );
+
+    const result = await analyzeImageEs(Buffer.from('img'), 'photo.jpg');
+
+    expect(result).toEqual([
+      { label: 'perro', confidence: 0.95 },
+      { label: 'parque', confidence: 0.8 },
+    ]);
+  });
+});

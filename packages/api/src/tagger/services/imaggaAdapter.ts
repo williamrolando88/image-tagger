@@ -13,7 +13,9 @@ interface ImaggaTagsResponse {
   result?: {
     tags?: Array<{
       confidence: number;
-      tag: { en?: string };
+      // Indexado por idioma (ej. 'en', 'es'): Imagga devuelve la etiqueta en
+      // la clave correspondiente al `language` pedido en la query.
+      tag: Record<string, string | undefined>;
     }>;
   };
   status?: {
@@ -43,7 +45,7 @@ export async function analyzeImage(
       'base64',
     );
 
-  const url = `${IMAGGA_TAGS_URL}?language=${env.imaggaTagLanguage}`;
+  const url = `${IMAGGA_TAGS_URL}?${new URLSearchParams({ language: env.imaggaTagLanguage })}`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -74,7 +76,7 @@ export async function analyzeImage(
 
   return tags
     .map((t) => ({
-      label: t.tag.en ?? '',
+      label: t.tag[env.imaggaTagLanguage] ?? t.tag.en ?? '',
       confidence: round2(t.confidence / 100),
     }))
     .sort((a, b) => b.confidence - a.confidence);
