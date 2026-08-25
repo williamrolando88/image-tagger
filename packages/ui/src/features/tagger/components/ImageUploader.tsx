@@ -2,7 +2,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import type { Accept, FileRejection } from 'react-dropzone'
 
-// Valores por defecto cuando el caller no los especifica.
+// Valores por defecto cuando el caller no los especifica. El limite de tamano
+// refleja el DEFAULT del backend (MAX_FILE_SIZE_MB = 10). El backend es la
+// autoridad: si se cambia ese limite, esta validacion de cliente (best-effort
+// para UX) puede quedar desalineada, pero el backend igualmente rechaza con un
+// error claro (413 FILE_TOO_LARGE) que la UI muestra.
 const DEFAULT_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 const DEFAULT_MAX_SIZE_BYTES = 10 * 1024 * 1024
 
