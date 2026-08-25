@@ -39,7 +39,11 @@ export function AnalysisControls({
 
       {status === 'uploading' && <ProgressBar value={progress} label="Subiendo imagen…" />}
 
-      {status === 'processing' && <Spinner label="Procesando…" />}
+      {status === 'processing' && (
+        <div className="flex justify-center py-2">
+          <Spinner label="Procesando…" />
+        </div>
+      )}
 
       {status === 'success' && (
         <button type="button" className="btn btn-outline w-full" onClick={onReset}>

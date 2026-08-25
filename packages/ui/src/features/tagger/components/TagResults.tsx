@@ -40,7 +40,7 @@ export function TagResults({ tags }: TagResultsProps) {
       <div className="card-body gap-3">
         <h2 className="card-title text-base">Etiquetas</h2>
 
-        <ul className="flex flex-col gap-3">
+        <ul id="tag-results-list" className="flex flex-col gap-3">
           {visibleTags.map((tag, index) => (
             // Los labels pueden repetirse o venir vacios (fallback del adapter),
             // asi que se combina con el indice para una key estable y unica.
@@ -56,6 +56,8 @@ export function TagResults({ tags }: TagResultsProps) {
             type="button"
             className="btn btn-ghost btn-sm self-start"
             onClick={() => setExpanded((current) => !current)}
+            aria-expanded={expanded}
+            aria-controls="tag-results-list"
           >
             {expanded ? 'Mostrar menos' : 'Mostrar más'}
           </button>
