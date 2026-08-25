@@ -124,15 +124,43 @@ describe('ImageUploader', () => {
     expect(img).toHaveAccessibleName()
   })
 
-  it('deshabilita el boton "Seleccionar imagen" cuando disabled es true', () => {
+  it('muestra el boton "Seleccionar imagen" habilitado cuando disabled es false', () => {
+    // Nuevo contrato: disabled=false significa "seleccion permitida" -> el boton
+    // de fallback se renderiza y esta habilitado.
     renderUploader({
       previewUrl: 'blob:xyz',
-      disabled: true,
+      disabled: false,
       onFileSelected: vi.fn(),
     })
 
     expect(
       screen.getByRole('button', { name: /seleccionar imagen/i }),
-    ).toBeDisabled()
+    ).toBeEnabled()
+  })
+
+  it('oculta el boton "Seleccionar imagen" y deshabilita el dropzone cuando disabled es true', () => {
+    // Nuevo contrato (review CLI): disabled=true significa "seleccion NO
+    // permitida". El boton de fallback ya NO se deshabilita: se OCULTA (no se
+    // renderiza). El drag&drop, en cambio, se sigue deshabilitando.
+    const { getFileInput } = renderUploader({
+      previewUrl: 'blob:xyz',
+      disabled: true,
+      onFileSelected: vi.fn(),
+    })
+
+    // El boton NO esta en el DOM (oculto, no deshabilitado).
+    expect(
+      screen.queryByRole('button', { name: /seleccionar imagen/i }),
+    ).toBeNull()
+
+    // El dropzone queda deshabilitado. react-dropzone v20 NO agrega `disabled`
+    // al <input>; la senal fiable es aria-disabled="true" en el root de
+    // getRootProps (el div padre del input).
+    const dropzone = getFileInput().parentElement as HTMLElement
+    expect(dropzone).toHaveAttribute('aria-disabled', 'true')
+
+    // La preview se muestra SIEMPRE que haya previewUrl, con independencia de
+    // disabled: el ocultamiento afecta solo al boton, no a la imagen.
+    expect(screen.getByRole('img')).toBeInTheDocument()
   })
 })

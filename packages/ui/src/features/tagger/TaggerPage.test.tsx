@@ -72,15 +72,17 @@ describe('TaggerPage (integracion)', () => {
     // interno porque la promesa esta diferida (queremos ver el estado en vuelo).
     await user.click(screen.getByRole('button', { name: /analizar/i }))
 
-    // uploading -> barra de progreso visible y el uploader deshabilitado.
+    // uploading -> barra de progreso visible y el boton de seleccion OCULTO.
     // Guardamos la referencia a la barra de carga para comprobar despues que
     // desaparece (TagResults tiene sus propias <progress>, asi que no sirve
     // queryByRole('progressbar') para ese chequeo).
     const loadingBar = screen.getByRole('progressbar')
     expect(loadingBar).toBeInTheDocument()
+    // Nuevo contrato: en uploading la seleccion NO esta permitida, asi que el
+    // boton "Seleccionar imagen" no se renderiza (se oculta, no se deshabilita).
     expect(
-      screen.getByRole('button', { name: /seleccionar imagen/i }),
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: /seleccionar imagen/i }),
+    ).toBeNull()
 
     // El servicio recibio el File subido por el usuario.
     expect(analyze).toHaveBeenCalledTimes(1)
@@ -114,6 +116,15 @@ describe('TaggerPage (integracion)', () => {
     // subida ni el spinner de procesamiento.
     expect(loadingBar).not.toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    // En success la seleccion tampoco esta permitida: el boton "Seleccionar
+    // imagen" permanece oculto y para elegir otra imagen aparece el reset.
+    expect(
+      screen.queryByRole('button', { name: /seleccionar imagen/i }),
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /analizar otra imagen/i }),
+    ).toBeInTheDocument()
   })
 
   it('ruta de error: muestra ErrorAlert con el mensaje y boton Reintentar', async () => {
@@ -153,5 +164,55 @@ describe('TaggerPage (integracion)', () => {
     await user.click(within(alert).getByRole('button', { name: /reintentar/i }))
 
     await waitFor(() => expect(analyze).toHaveBeenCalledTimes(2))
+  })
+
+  // Nuevo contrato (review CLI): la seleccion de imagen (boton "Seleccionar
+  // imagen" Y el drag&drop) esta permitida en 'idle' Y 'fileSelected' (imagen
+  // elegida pero aun sin analizar -> poder cambiarla). En 'uploading',
+  // 'processing', 'success' y 'error' NO esta permitida: el boton se OCULTA y el
+  // drag&drop se deshabilita. El flujo feliz de arriba ya cubre 'uploading' y
+  // 'success'; aqui cubrimos 'idle' y 'fileSelected'.
+  describe('seleccion permitida en idle y fileSelected', () => {
+    it('estado inicial (idle): el boton "Seleccionar imagen" esta presente y habilitado', () => {
+      // Al montar la pagina sin seleccionar nada, status = 'idle': la seleccion
+      // esta permitida.
+      render(<TaggerPage />)
+
+      expect(
+        screen.getByRole('button', { name: /seleccionar imagen/i }),
+      ).toBeEnabled()
+    })
+
+    it('tras seleccionar imagen (fileSelected): el boton "Seleccionar imagen" sigue presente y habilitado', async () => {
+      const user = userEvent.setup()
+      const { container } = render(<TaggerPage />)
+
+      // Solo seleccionamos el archivo (no disparamos el analisis): status pasa a
+      // 'fileSelected'. No hace falta configurar el mock de analyze para esto.
+      await selectValidImage(user, container)
+
+      // Nuevo contrato: en 'fileSelected' se puede elegir otra imagen, asi que el
+      // boton sigue presente y habilitado (invierte la asercion de R3).
+      expect(
+        screen.getByRole('button', { name: /seleccionar imagen/i }),
+      ).toBeEnabled()
+    })
+
+    it('tras seleccionar imagen (fileSelected): el drag&drop sigue activo (no deshabilitado)', async () => {
+      const user = userEvent.setup()
+      const { container } = render(<TaggerPage />)
+
+      await selectValidImage(user, container)
+
+      // NOTA (react-dropzone v20.1.1): la libreria solo agrega
+      // `aria-disabled="true"` al root de getRootProps cuando el dropzone esta
+      // deshabilitado; cuando esta activo NO agrega el atributo. La senal fiable
+      // de que el drag&drop sigue activo en 'fileSelected' es la AUSENCIA de
+      // aria-disabled="true" en el root (el div padre del input).
+      const dropzone = container.querySelector<HTMLElement>('input[type="file"]')
+        ?.parentElement as HTMLElement
+
+      expect(dropzone).not.toHaveAttribute('aria-disabled', 'true')
+    })
   })
 })

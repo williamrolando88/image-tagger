@@ -35,7 +35,9 @@ function buildRejectionMessage(rejection: FileRejection, maxSizeBytes: number): 
  * Area de subida de imagenes: arrastrar y soltar (via react-dropzone) o
  * boton de fallback. Muestra la preview de la imagen seleccionada y los
  * errores de validacion (tipo/tamano). El disparo del analisis vive en
- * `AnalysisControls`.
+ * `AnalysisControls`. Cuando `disabled` es true la seleccion no esta
+ * permitida: el boton de fallback se oculta (no se renderiza) y el
+ * drag&drop del dropzone se deshabilita.
  */
 export function ImageUploader({
   previewUrl,
@@ -101,14 +103,15 @@ export function ImageUploader({
             </p>
           )}
 
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={open}
-            disabled={disabled}
-          >
-            Seleccionar imagen
-          </button>
+          {!disabled && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={open}
+            >
+              Seleccionar imagen
+            </button>
+          )}
         </div>
 
         {validationError && (

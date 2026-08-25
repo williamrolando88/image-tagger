@@ -15,15 +15,19 @@ export function TaggerPage() {
   const { status, previewUrl, progress, tags, error, selectFile, analyze, reset } =
     useImageAnalysis()
 
-  // La subida y el procesamiento por IA deshabilitan el uploader para evitar
-  // selecciones o analisis concurrentes.
-  const isBusy = status === 'uploading' || status === 'processing'
+  // Solo se puede (re)seleccionar imagen antes de iniciar el analisis: sin
+  // imagen (idle) o con una elegida pero aun sin analizar (fileSelected).
+  const canSelectImage = status === 'idle' || status === 'fileSelected'
 
   return (
     <section className="flex w-full flex-col items-center gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">Analizador de imágenes</h1>
 
-      <ImageUploader previewUrl={previewUrl} disabled={isBusy} onFileSelected={selectFile} />
+      <ImageUploader
+        previewUrl={previewUrl}
+        disabled={!canSelectImage}
+        onFileSelected={selectFile}
+      />
 
       <AnalysisControls
         status={status}
